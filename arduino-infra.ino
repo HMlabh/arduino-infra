@@ -36,13 +36,15 @@ namespace pin
 }
 namespace addr
 {
-	int AD0 = 0x48;
-	int AD1 = 0x49;
-	int AD2 = 0x4A;
-	int AD3 = 0x4B;
+	int AD0 = 0x48;		//I2C Address of ADS 0
+	int AD1 = 0x49;		//I2C Address of ADS 1
+	int AD2 = 0x4A;		//I2C Address of ADS 2
+	int AD3 = 0x4B;		//I2C Address of ADS 3
 }
 
 //-------------------Init-----------------------
+
+//Vector including all Enable-Pins
 int enables[16] =
 { pin::EN0 , pin::EN1 , pin::EN2 , pin::EN3 , pin::EN4 , 
   pin::EN5 , pin::EN6 , pin::EN7 , pin::EN8 , pin::EN9 , 
@@ -79,11 +81,7 @@ void setup()
 		pinMode(enables[i], OUTPUT); //Sensor i Enable 0utput
 	}
 	
-	// HACK SEN ON!!!
-	for (int i = 0; i <= 15; i++)
-	{
-		digitalWrite(enables[i], HIGH); //Sensor i HIGH
-	}
+	
 
 	//Begin serial communication to ADS1115
 	ad0.begin();
@@ -91,11 +89,26 @@ void setup()
 	ad2.begin();
 	ad3.begin();
 
-	
+	//aktiviere alle Sensoren
+	enableallsensors();
 
 }
 
 //-------------------Functions------------------
+
+void enablesensor(int sensornr)
+{
+	pinMode(enables[sensornr], OUTPUT); //Sensor i Enable 0utput
+}
+
+void enableallsensors()
+{
+	for (int i = 0; i <= 15; i++)
+	{
+		digitalWrite(enables[i], HIGH); //Sensor i HIGH
+	}
+	delay(100);
+}
 
 int16_t readsensor(int sensornr)
 {
@@ -159,7 +172,6 @@ void readallsensors()
 
 void fastread()
 {
-	
 	for (int i = 0; i <= 3; i++)
 	{
 		//Start Reading Block i:
@@ -174,60 +186,6 @@ void fastread()
 		ranges[8+i] = ad2.readADC_SingleEnded_Read(i);
 		ranges[12+i] = ad3.readADC_SingleEnded_Read(i);
 	}
-	
-
-	/*
-
-	//Start Reading Block 0:
-	ad0.readADC_SingleEnded_Start(0);
-	ad1.readADC_SingleEnded_Start(0);
-	ad2.readADC_SingleEnded_Start(0);
-	ad3.readADC_SingleEnded_Start(0);
-	delay(8);
-	//Read Block 0
-	ranges[0]=ad0.readADC_SingleEnded_Read(0);
-	ranges[4] = ad0.readADC_SingleEnded_Read(0);
-	ranges[8] = ad0.readADC_SingleEnded_Read(0);
-	ranges[12] = ad0.readADC_SingleEnded_Read(0);
-
-	//Start Reading Block 1:
-	ad0.readADC_SingleEnded_Start(1);
-	ad1.readADC_SingleEnded_Start(1);
-	ad2.readADC_SingleEnded_Start(1);
-	ad3.readADC_SingleEnded_Start(1);
-	delay(8);
-	//Read Block 1
-	ranges[1] = ad0.readADC_SingleEnded_Read(1);
-	ranges[5] = ad0.readADC_SingleEnded_Read(1);
-	ranges[9] = ad0.readADC_SingleEnded_Read(1);
-	ranges[13] = ad0.readADC_SingleEnded_Read(1);
-
-	//Start Reading Block 2:
-	ad0.readADC_SingleEnded_Start(2);
-	ad1.readADC_SingleEnded_Start(2);
-	ad2.readADC_SingleEnded_Start(2);
-	ad3.readADC_SingleEnded_Start(2);
-	delay(8);
-	//Read Block 2
-	ranges[2] = ad0.readADC_SingleEnded_Read(2);
-	ranges[6] = ad0.readADC_SingleEnded_Read(2);
-	ranges[10] = ad0.readADC_SingleEnded_Read(2);
-	ranges[14] = ad0.readADC_SingleEnded_Read(2);
-
-	//Start Reading Block 3:
-	ad0.readADC_SingleEnded_Start(3);
-	ad1.readADC_SingleEnded_Start(3);
-	ad2.readADC_SingleEnded_Start(3);
-	ad3.readADC_SingleEnded_Start(3);
-	delay(8);
-	//Read Block 3
-	ranges[3] = ad0.readADC_SingleEnded_Read(3);
-	ranges[7] = ad0.readADC_SingleEnded_Read(3);
-	ranges[11] = ad0.readADC_SingleEnded_Read(3);
-	ranges[15] = ad0.readADC_SingleEnded_Read(3);
-	*/
-	
-
 }
 
 //-------------------Loop--------------------
