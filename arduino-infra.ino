@@ -159,6 +159,25 @@ void readallsensors()
 
 void fastread()
 {
+	
+	for (int i = 0; i <= 3; i++)
+	{
+		//Start Reading Block i:
+		ad0.readADC_SingleEnded_Start(i);
+		ad1.readADC_SingleEnded_Start(i);
+		ad2.readADC_SingleEnded_Start(i);
+		ad3.readADC_SingleEnded_Start(i);
+		delay(8);
+		//Read Block i
+		ranges[0+i] = ad0.readADC_SingleEnded_Read(i);
+		ranges[4+i] = ad1.readADC_SingleEnded_Read(i);
+		ranges[8+i] = ad2.readADC_SingleEnded_Read(i);
+		ranges[12+i] = ad3.readADC_SingleEnded_Read(i);
+	}
+	
+
+	/*
+
 	//Start Reading Block 0:
 	ad0.readADC_SingleEnded_Start(0);
 	ad1.readADC_SingleEnded_Start(0);
@@ -206,6 +225,8 @@ void fastread()
 	ranges[7] = ad0.readADC_SingleEnded_Read(3);
 	ranges[11] = ad0.readADC_SingleEnded_Read(3);
 	ranges[15] = ad0.readADC_SingleEnded_Read(3);
+	*/
+	
 
 }
 
@@ -216,16 +237,16 @@ void loop()
 	#ifdef serialDebug
 
 	measuretime = micros();
-
-	fastread();
 	//readallsensors();
+	fastread();
 	measuretime = micros() - measuretime;
 
 	for (int i = 0; i <= 15; i++)
 	{
 		Serial.println(String("Sensor ")+(i)+(" : ")+(ranges[i]));
 	}
-	Serial.println(measuretime);
+	Serial.println(String(measuretime)+("  |  ")+(measurecount));
+
 	Serial.println("------------------------------");
 
 
@@ -234,6 +255,6 @@ void loop()
 	
 
 	measurecount++;
-	//delay(10);
+	//delay(1000);
 
 }
