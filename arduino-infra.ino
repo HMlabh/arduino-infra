@@ -56,10 +56,10 @@ long measuretime = 0;
 int16_t ranges[16] = { 0 };
 
 //-----ADC-----
-Adafruit_ADS1115 ad0(addr::AD0);	// construct an ads1115 at address AD0
-Adafruit_ADS1115 ad1(addr::AD1);	// construct an ads1115 at address AD1
-Adafruit_ADS1115 ad2(addr::AD2);	// construct an ads1115 at address AD2
-Adafruit_ADS1115 ad3(addr::AD3);	// construct an ads1115 at address AD3
+Adafruit_ADS1015 ad0(addr::AD0);	// construct an ads1115 at address AD0
+Adafruit_ADS1015 ad1(addr::AD1);	// construct an ads1115 at address AD1
+Adafruit_ADS1015 ad2(addr::AD2);	// construct an ads1115 at address AD2
+Adafruit_ADS1015 ad3(addr::AD3);	// construct an ads1115 at address AD3
 
 //-------------------Setup-----------------------
 
@@ -88,6 +88,11 @@ void setup()
 	ad1.begin();
 	ad2.begin();
 	ad3.begin();
+	//set Gain
+	ad0.setGain(GAIN_TWOTHIRDS);
+	ad1.setGain(GAIN_TWOTHIRDS);
+	ad2.setGain(GAIN_TWOTHIRDS);
+	ad3.setGain(GAIN_TWOTHIRDS);
 
 	//aktiviere alle Sensoren
 	enableallsensors();
@@ -179,12 +184,33 @@ void fastread()
 		ad1.readADC_SingleEnded_Start(i);
 		ad2.readADC_SingleEnded_Start(i);
 		ad3.readADC_SingleEnded_Start(i);
-		delay(8);
+		delayMicroseconds(100);
 		//Read Block i
 		ranges[0+i] = ad0.readADC_SingleEnded_Read(i);
 		ranges[4+i] = ad1.readADC_SingleEnded_Read(i);
 		ranges[8+i] = ad2.readADC_SingleEnded_Read(i);
 		ranges[12+i] = ad3.readADC_SingleEnded_Read(i);
+	}
+}
+
+void averageread(int mcount)
+{
+	int16_t ranges_ram[16] = { 0 };
+
+	for (int i = 0; i < mcount; i++)
+	{
+		fastread();
+
+		for (int n = 0; n < 16; n++)
+		{
+			ranges_ram[n] = ranges_ram[n] + ranges[n];
+		}
+	}
+
+	//calc Average:
+	for (int i = 0; i < 16; i++)
+	{
+		ranges[i] = ranges_ram[i] / mcount;
 	}
 }
 
@@ -196,7 +222,8 @@ void loop()
 
 	measuretime = micros();
 	//readallsensors();
-	fastread();
+	//fastread();
+	averageread(10);
 	measuretime = micros() - measuretime;
 
 	for (int i = 0; i <= 15; i++)
@@ -213,6 +240,6 @@ void loop()
 	
 
 	measurecount++;
-	//delay(1000);
+	delay(200);
 
 }
