@@ -101,20 +101,39 @@ void setup()
 
 //-------------------Functions------------------
 
+//enable [Sensor]
 void enablesensor(int sensornr)
 {
-	pinMode(enables[sensornr], OUTPUT); //Sensor i Enable 0utput
+	digitalWrite(enables[sensornr], HIGH); //Sensor i Enable
 }
 
+//disable [Sensor]
+void disablesensor(int sensornr)
+{
+	digitalWrite(enables[sensornr], LOW); //Sensor i Disable
+}
+
+//enable all Sensors
 void enableallsensors()
 {
 	for (int i = 0; i <= 15; i++)
 	{
-		digitalWrite(enables[i], HIGH); //Sensor i HIGH
+		digitalWrite(enables[i], HIGH); //Sensor i Enable
 	}
 	delay(100);
 }
 
+//disable all Sensors
+void disableallsensors()
+{
+	for (int i = 0; i <= 15; i++)
+	{
+		digitalWrite(enables[i], LOW); //Sensor i Disable
+	}
+	delay(100);
+}
+
+//read [Sensor]
 int16_t readsensor(int sensornr)
 {
 	int16_t range = 0;
@@ -152,6 +171,7 @@ int16_t readsensor(int sensornr)
 	}
 }
 
+//read all Sensors in a row
 void readallsensors()
 {
 	ranges[0] = ad0.readADC_SingleEnded(0);
@@ -175,6 +195,7 @@ void readallsensors()
 	ranges[15] = ad3.readADC_SingleEnded(3);
 }
 
+//read all sensors 4 at a time
 void fastread()
 {
 	for (int i = 0; i <= 3; i++)
@@ -193,6 +214,7 @@ void fastread()
 	}
 }
 
+//reads all sensors fast [n]-times
 void averageread(int mcount)
 {
 	int16_t ranges_ram[16] = { 0 };
@@ -222,8 +244,8 @@ void loop()
 
 	measuretime = micros();
 	//readallsensors();
-	//fastread();
-	averageread(10);
+	fastread();
+	//averageread(10);
 	measuretime = micros() - measuretime;
 
 	for (int i = 0; i <= 15; i++)
