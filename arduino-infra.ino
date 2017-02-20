@@ -8,7 +8,19 @@
 #include <Adafruit_ADS1015.h>
 //------------------Defines-------------------
 #define serialDebug //Debug output over Serial connection to PC
+#define serialDebug_continuous //reads the 16 Sensors continuous
+//#define debug_noident //Operation does not require Pairing
 
+//------------------Params--------------------
+namespace param 
+{
+	int8_t ident = 73; //Identifier: 73 "I"
+	int8_t ident_ask = 105;  // define ident_ask Message: 105 "i"
+	int8_t ident_ok = 111; //define call Message: 111 "o"
+
+	int8_t call = 99; //define call Message: 99 "c"
+	int8_t ask = 97;  // define ask Message: 97 "a"
+}
 
 
 //------------------Pinset--------------------
@@ -65,13 +77,18 @@ Adafruit_ADS1015 ad3(addr::AD3);	// construct an ads1115 at address AD3
 
 void setup() 
 {
-#ifdef serialDebug				//establish Serial Debug-Connection
 	Serial.begin(115200);
-	while (!Serial) 
+	while (!Serial)
 	{
 		; // wait for serial port to connect. Needed for native USB port only
 	}
-#endif // serialDebug
+
+	#ifdef serialDebug
+		Serial.println("Serial Connection established");
+		Serial.println(String("identifier : ")+(param::ident));
+		Serial.println(String("call Message : ") + (param::call));
+		Serial.println(String("ask Message : ") + (param::ask));
+	#endif // serialDebug
 
 
 
@@ -79,6 +96,10 @@ void setup()
 	for (int i = 0; i <= 15; i++)
 	{
 		pinMode(enables[i], OUTPUT); //Sensor i Enable 0utput
+
+		#ifdef serialDebug
+			Serial.println(String("Sensor ") + (i) + ("-> OUTPUT"));
+		#endif // serialDebug
 	}
 	
 	
@@ -94,12 +115,75 @@ void setup()
 	ad2.setGain(GAIN_TWOTHIRDS);
 	ad3.setGain(GAIN_TWOTHIRDS);
 
+#ifndef debug_noident
+	usbident();
+#endif // !debug_noident
+
+
+
 	//aktiviere alle Sensoren
 	enableallsensors();
+
+
 
 }
 
 //-------------------Functions------------------
+
+//----------------System Functions---------------------
+
+//Waits for Node to identify, then pairs
+void usbident()
+{
+	int8_t state = 1;	//status 1=in progress ; 0 = done
+	int8_t read = 0;
+	while (state)
+	{
+
+		while (!Serial.available()) {} //waits for a Message from Node
+		read = Serial.read();
+		if (read == param::ident_ask)
+		{//Message was ident_ask
+			#ifdef serialDebug
+				Serial.println("ident_ask received");
+			#endif // serialDebug
+
+			Serial.write(param::ident);    // Send Identifier
+			while (state)
+			{
+				while (!Serial.available()) {} //waits for a Message from Node
+				read = Serial.read();
+				if (read == param::ident_ok)
+				{//Message was ident_ok
+					#ifdef serialDebug
+						Serial.println("ident_ok received");
+					#endif // serialDebug
+					state = 0; // status = done
+				}
+				else
+				{//Message was something else
+					delay(1);
+				}
+			}
+			
+
+
+		}
+		else
+		{//Message was something else
+			delay(1);
+		}
+
+
+
+	}
+}
+
+
+
+
+
+//----------------Sensor Functions---------------------
 
 //enable [Sensor]
 void enablesensor(int sensornr)
@@ -236,32 +320,38 @@ void averageread(int mcount)
 	}
 }
 
-//-------------------Loop--------------------
 
+
+
+
+
+//-------------------Loop--------------------
 void loop() 
 {
-	#ifdef serialDebug
-
-	measuretime = micros();
-	//readallsensors();
-	fastread();
-	//averageread(10);
-	measuretime = micros() - measuretime;
-
-	for (int i = 0; i <= 15; i++)
-	{
-		Serial.println(String("Sensor ")+(i)+(" : ")+(ranges[i]));
-	}
-	Serial.println(String(measuretime)+("  |  ")+(measurecount));
-
-	Serial.println("------------------------------");
 
 
-	#endif // serialDebug
+
+
+
+
 
 	
 
+
+
+#ifdef serialDebug_continuous
+	measuretime = micros();
+	fastread();
+	measuretime = micros() - measuretime;
+	for (int i = 0; i <= 15; i++)
+	{
+		Serial.println(String("Sensor ") + (i)+(" : ") + (ranges[i]));
+	}
+	Serial.println(String(measuretime) + ("  |  ") + (measurecount));
+
+	Serial.println("------------------------------");
 	measurecount++;
 	delay(200);
+#endif // serialDebug_continuous
 
 }
