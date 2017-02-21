@@ -190,9 +190,8 @@ void sendsolution()
 #endif // serialDebug
 	for (int i = 0; i <= 15; i++)
 	{
-
-		Serial.write(highByte(ranges[i]));
 		Serial.write(lowByte(ranges[i]));
+		Serial.write(highByte(ranges[i]));
 
 
 	}
