@@ -7,9 +7,9 @@
 #include <Wire.h>
 #include <Adafruit_ADS1015.h>
 //------------------Defines-------------------
-#define serialDebug //Debug output over Serial connection to PC
-#define serialDebug_continuous //reads the 16 Sensors continuous
-//#define debug_noident //Operation does not require Pairing
+//#define serialDebug //Debug output over Serial connection to PC
+//#define serialDebug_continuous //reads the 16 Sensors continuous
+#define debug_noident //Operation does not require Pairing
 
 //------------------Params--------------------
 namespace param 
@@ -22,6 +22,7 @@ namespace param
 	int8_t ask = 97;  // define ask Message: 97 "a"
 }
 
+int8_t mram = 0;	//Message storage
 
 //------------------Pinset--------------------
 
@@ -72,6 +73,8 @@ Adafruit_ADS1015 ad0(addr::AD0);	// construct an ads1115 at address AD0
 Adafruit_ADS1015 ad1(addr::AD1);	// construct an ads1115 at address AD1
 Adafruit_ADS1015 ad2(addr::AD2);	// construct an ads1115 at address AD2
 Adafruit_ADS1015 ad3(addr::AD3);	// construct an ads1115 at address AD3
+
+
 
 //-------------------Setup-----------------------
 
@@ -179,7 +182,32 @@ void usbident()
 	}
 }
 
+//Send Solution vector to Node
+void sendsolution()
+{
+#ifdef serialDebug
+	Serial.println("Solution:");
+#endif // serialDebug
+	for (int i = 0; i <= 15; i++)
+	{
 
+		Serial.write(highByte(ranges[i]));
+		Serial.write(lowByte(ranges[i]));
+
+
+	}
+
+#ifdef serialDebug
+	Serial.println("");
+	Serial.println("ASCII:");
+	for (int i = 0; i <= 15; i++)
+	{
+		Serial.print(ranges[i]);
+		Serial.print(" ; ");
+	}
+	Serial.println("");
+#endif // serialDebug
+}
 
 
 
@@ -282,6 +310,9 @@ void readallsensors()
 //read all sensors 4 at a time
 void fastread()
 {
+	#ifdef serialDebug
+		Serial.println("fastread");
+	#endif // serialDebug
 	for (int i = 0; i <= 3; i++)
 	{
 		//Start Reading Block i:
@@ -329,7 +360,37 @@ void averageread(int mcount)
 void loop() 
 {
 
+#ifdef serialDebug
+	Serial.println("waiting...");
+#endif // serialDebug
+	while (!Serial.available()) {} //waits for a Message from Node
+	mram = Serial.read();
+#ifdef serialDebug
+	Serial.println("message received");
+#endif // serialDebug
+	
+	
+	if (mram == param::call)//call message received
+	{
+#ifdef serialDebug
+		Serial.println(String("..call message.."));
+#endif // serialDebug
+		fastread();
+	}
 
+	else if (mram == param::ask)//ask message recieved
+	{
+#ifdef serialDebug
+		Serial.println(String("..ask message.."));
+#endif // serialDebug
+		sendsolution();
+	}
+	else//anny other message -> do nothing
+	{
+#ifdef serialDebug
+		Serial.println(String("!!unidentified message!!"));
+#endif // serialDebug
+	}
 
 
 
