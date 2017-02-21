@@ -9,15 +9,13 @@
 //------------------Defines-------------------
 //#define serialDebug //Debug output over Serial connection to PC
 //#define serialDebug_continuous //reads the 16 Sensors continuous
-#define debug_noident //Operation does not require Pairing
+
 
 //------------------Params--------------------
 namespace param 
 {
 	int8_t ident = 73; //Identifier: 73 "I"
 	int8_t ident_ask = 105;  // define ident_ask Message: 105 "i"
-	int8_t ident_ok = 111; //define call Message: 111 "o"
-
 	int8_t call = 99; //define call Message: 99 "c"
 	int8_t ask = 97;  // define ask Message: 97 "a"
 }
@@ -118,10 +116,6 @@ void setup()
 	ad2.setGain(GAIN_TWOTHIRDS);
 	ad3.setGain(GAIN_TWOTHIRDS);
 
-#ifndef debug_noident
-	usbident();
-#endif // !debug_noident
-
 
 
 	//aktiviere alle Sensoren
@@ -135,53 +129,6 @@ void setup()
 
 //----------------System Functions---------------------
 
-//Waits for Node to identify, then pairs
-void usbident()
-{
-	int8_t state = 1;	//status 1=in progress ; 0 = done
-	int8_t read = 0;
-	while (state)
-	{
-
-		while (!Serial.available()) {} //waits for a Message from Node
-		read = Serial.read();
-		if (read == param::ident_ask)
-		{//Message was ident_ask
-			#ifdef serialDebug
-				Serial.println("ident_ask received");
-			#endif // serialDebug
-
-			Serial.write(param::ident);    // Send Identifier
-			while (state)
-			{
-				while (!Serial.available()) {} //waits for a Message from Node
-				read = Serial.read();
-				if (read == param::ident_ok)
-				{//Message was ident_ok
-					#ifdef serialDebug
-						Serial.println("ident_ok received");
-					#endif // serialDebug
-					state = 0; // status = done
-				}
-				else
-				{//Message was something else
-					delay(1);
-				}
-			}
-			
-
-
-		}
-		else
-		{//Message was something else
-			delay(1);
-		}
-
-
-
-	}
-}
-
 //Send Solution vector to Node
 void sendsolution()
 {
@@ -192,8 +139,6 @@ void sendsolution()
 	{
 		Serial.write(lowByte(ranges[i]));
 		Serial.write(highByte(ranges[i]));
-
-
 	}
 
 #ifdef serialDebug
@@ -362,8 +307,10 @@ void loop()
 #ifdef serialDebug
 	Serial.println("waiting...");
 #endif // serialDebug
+
 	while (!Serial.available()) {} //waits for a Message from Node
-	mram = Serial.read();
+	mram = Serial.read(); //reads Message from Node
+
 #ifdef serialDebug
 	Serial.println("message received");
 #endif // serialDebug
@@ -376,7 +323,7 @@ void loop()
 #endif // serialDebug
 		fastread();
 	}
-
+//-----------------------------------------------------------------
 	else if (mram == param::ask)//ask message recieved
 	{
 #ifdef serialDebug
@@ -384,6 +331,20 @@ void loop()
 #endif // serialDebug
 		sendsolution();
 	}
+//----------------------------------------------------------------
+	else if (mram == param::ident_ask)//ident_ask message recieved
+	{
+#ifdef serialDebug
+		Serial.println(String("Ident:"));
+#endif // serialDebug
+
+		Serial.write(param::ident);
+
+#ifdef serialDebug
+		Serial.println(String(" "));
+#endif // serialDebug
+	}
+//----------------------------------------------------------------
 	else//anny other message -> do nothing
 	{
 #ifdef serialDebug
