@@ -4,14 +4,18 @@
  Author:	gutek
 */
 
+
+//Includes
 #include <Wire.h>
 #include <Adafruit_ADS1015.h>
-//------------------Defines-------------------
+
+
+//----------------------Defines----------------------------
 //#define serialDebug //Debug output over Serial connection to PC
 //#define serialDebug_continuous //reads the 16 Sensors continuous
 
 
-//------------------Params--------------------
+//----------------------Params-----------------------------
 namespace param 
 {
 	int8_t ident = 73; //Identifier: 73 "I"
@@ -22,7 +26,7 @@ namespace param
 
 int8_t mram = 0;	//Message storage
 
-//------------------Pinset--------------------
+//----------------------Pinset-----------------------------
 
 namespace pin
 {
@@ -53,7 +57,7 @@ namespace addr
 	int AD3 = 0x4B;		//I2C Address of ADS 3
 }
 
-//-------------------Init-----------------------
+//----------------------Init-------------------------------
 
 //Vector including all Enable-Pins
 int enables[16] =
@@ -61,10 +65,11 @@ int enables[16] =
   pin::EN5 , pin::EN6 , pin::EN7 , pin::EN8 , pin::EN9 , 
   pin::EN10 , pin::EN11 , pin::EN12 , pin::EN13 , pin::EN14 , pin::EN15};
 
-int measurecount = 0;
-long measuretime = 0;
+int16_t ranges[16] = { 0 };//Rangevector ; Line = Sensornumber
 
-int16_t ranges[16] = { 0 };
+int measurecount = 0;	//stores the number of measures done
+long measuretime = 0;	//Storage variable for Time measurement
+
 
 //-----ADC-----
 Adafruit_ADS1015 ad0(addr::AD0);	// construct an ads1115 at address AD0
@@ -74,22 +79,23 @@ Adafruit_ADS1015 ad3(addr::AD3);	// construct an ads1115 at address AD3
 
 
 
-//-------------------Setup-----------------------
+//----------------------Setup------------------------------
 
 void setup() 
 {
+	//starting serial connection to Host
 	Serial.begin(115200);
 	while (!Serial)
 	{
 		; // wait for serial port to connect. Needed for native USB port only
 	}
 
-	#ifdef serialDebug
+#ifdef serialDebug	//sends debug message
 		Serial.println("Serial Connection established");
 		Serial.println(String("identifier : ")+(param::ident));
 		Serial.println(String("call Message : ") + (param::call));
 		Serial.println(String("ask Message : ") + (param::ask));
-	#endif // serialDebug
+#endif // serialDebug
 
 
 
@@ -98,13 +104,11 @@ void setup()
 	{
 		pinMode(enables[i], OUTPUT); //Sensor i Enable 0utput
 
-		#ifdef serialDebug
+#ifdef serialDebug
 			Serial.println(String("Sensor ") + (i) + ("-> OUTPUT"));
-		#endif // serialDebug
+#endif // serialDebug
 	}
 	
-	
-
 	//Begin serial communication to ADS1115
 	ad0.begin();
 	ad1.begin();
@@ -116,51 +120,28 @@ void setup()
 	ad2.setGain(GAIN_TWOTHIRDS);
 	ad3.setGain(GAIN_TWOTHIRDS);
 
-
-
-	//aktiviere alle Sensoren
+	//activate all Sensors
 	enableallsensors();
-
-
 
 }
 
 //-------------------Functions------------------
 
-//----------------System Functions---------------------
-
-//Send Solution vector to Node
-void sendsolution()
-{
-#ifdef serialDebug
-	Serial.println("Solution:");
-#endif // serialDebug
-	for (int i = 0; i <= 15; i++)
-	{
-		Serial.write(lowByte(ranges[i]));
-		Serial.write(highByte(ranges[i]));
-	}
-
-#ifdef serialDebug
-	Serial.println("");
-	Serial.println("ASCII:");
-	for (int i = 0; i <= 15; i++)
-	{
-		Serial.print(ranges[i]);
-		Serial.print(" ; ");
-	}
-	Serial.println("");
-#endif // serialDebug
-}
-
-
-
-//----------------Sensor Functions---------------------
 
 //enable [Sensor]
 void enablesensor(int sensornr)
 {
 	digitalWrite(enables[sensornr], HIGH); //Sensor i Enable
+}
+
+//enable all Sensors
+void enableallsensors()
+{
+	for (int i = 0; i <= 15; i++)
+	{
+		enablesensor(i); //Sensor i Enable
+	}
+	delay(100);
 }
 
 //disable [Sensor]
@@ -169,24 +150,13 @@ void disablesensor(int sensornr)
 	digitalWrite(enables[sensornr], LOW); //Sensor i Disable
 }
 
-//enable all Sensors
-void enableallsensors()
-{
-	for (int i = 0; i <= 15; i++)
-	{
-		digitalWrite(enables[i], HIGH); //Sensor i Enable
-	}
-	delay(100);
-}
-
 //disable all Sensors
 void disableallsensors()
 {
 	for (int i = 0; i <= 15; i++)
 	{
-		digitalWrite(enables[i], LOW); //Sensor i Disable
+		disablesensor(i); //Sensor i Disable
 	}
-	delay(100);
 }
 
 //read [Sensor]
@@ -273,34 +243,33 @@ void fastread()
 	}
 }
 
-//reads all sensors fast [n]-times
-void averageread(int mcount)
+//Send Solution vector to Node
+void sendsolution()
 {
-	int16_t ranges_ram[16] = { 0 };
-
-	for (int i = 0; i < mcount; i++)
+#ifdef serialDebug
+	Serial.println("Solution:");
+#endif // serialDebug
+	for (int i = 0; i <= 15; i++)
 	{
-		fastread();
-
-		for (int n = 0; n < 16; n++)
-		{
-			ranges_ram[n] = ranges_ram[n] + ranges[n];
-		}
+		Serial.write(lowByte(ranges[i]));
+		Serial.write(highByte(ranges[i]));
 	}
 
-	//calc Average:
-	for (int i = 0; i < 16; i++)
+#ifdef serialDebug
+	Serial.println("");
+	Serial.println("ASCII:");
+	for (int i = 0; i <= 15; i++)
 	{
-		ranges[i] = ranges_ram[i] / mcount;
+		Serial.print(ranges[i]);
+		Serial.print(" ; ");
 	}
+	Serial.println("");
+#endif // serialDebug
 }
 
 
-
-
-
-
 //-------------------Loop--------------------
+
 void loop() 
 {
 
@@ -308,8 +277,10 @@ void loop()
 	Serial.println("waiting...");
 #endif // serialDebug
 
+#ifndef serialDebug_continuous
 	while (!Serial.available()) {} //waits for a Message from Node
 	mram = Serial.read(); //reads Message from Node
+#endif //serialDebug_continuous
 
 #ifdef serialDebug
 	Serial.println("message received");
