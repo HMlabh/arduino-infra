@@ -18,10 +18,10 @@
 //----------------------Params-----------------------------
 namespace param 
 {
-	int8_t ident = 73; //Identifier: 73 "I"
-	int8_t ident_ask = 105;  // define ident_ask Message: 105 "i"
-	int8_t call = 99; //define call Message: 99 "c"
-	int8_t ask = 97;  // define ask Message: 97 "a"
+	int8_t ident = 73;		//Identifier: 73 "I"
+	int8_t ident_ask = 105; // define ident_ask Message: 105 "i"
+	int8_t call = 99;		//define call Message: 99 "c"
+	int8_t ask = 97;			// define ask Message: 97 "a"
 }
 
 int8_t mram = 0;	//Message storage
@@ -49,6 +49,7 @@ namespace pin
 	int EN14 = 21;
 	int EN15 = 20;
 }
+
 namespace addr
 {
 	int AD0 = 0x48;		//I2C Address of ADS 0
@@ -65,10 +66,10 @@ int enables[16] =
   pin::EN5 , pin::EN6 , pin::EN7 , pin::EN8 , pin::EN9 , 
   pin::EN10 , pin::EN11 , pin::EN12 , pin::EN13 , pin::EN14 , pin::EN15};
 
-int16_t ranges[16] = { 0 };//Rangevector ; Line = Sensornumber
+int16_t ranges[16] = { 0 };	//Rangevector ; Line = Sensornumber
 
-int measurecount = 0;	//stores the number of measures done
-long measuretime = 0;	//Storage variable for Time measurement
+int measurecount = 0;		//stores the number of measures done
+long measuretime = 0;		//Storage variable for Time measurement
 
 
 //-----ADC-----
@@ -97,9 +98,7 @@ void setup()
 		Serial.println(String("ask Message : ") + (param::ask));
 #endif // serialDebug
 
-
-
-	//Pinmode Enables
+	//Pinmode Enables Output
 	for (int i = 0; i <= 15; i++)
 	{
 		pinMode(enables[i], OUTPUT); //Sensor i Enable 0utput
@@ -107,6 +106,7 @@ void setup()
 #ifdef serialDebug
 			Serial.println(String("Sensor ") + (i) + ("-> OUTPUT"));
 #endif // serialDebug
+
 	}
 	
 	//Begin serial communication to ADS1115
@@ -114,6 +114,7 @@ void setup()
 	ad1.begin();
 	ad2.begin();
 	ad3.begin();
+
 	//set Gain
 	ad0.setGain(GAIN_TWOTHIRDS);
 	ad1.setGain(GAIN_TWOTHIRDS);
@@ -122,11 +123,10 @@ void setup()
 
 	//activate all Sensors
 	enableallsensors();
-
 }
 
-//-------------------Functions------------------
 
+//----------------------Functions--------------------------
 
 //enable [Sensor]
 void enablesensor(int sensornr)
@@ -141,7 +141,7 @@ void enableallsensors()
 	{
 		enablesensor(i); //Sensor i Enable
 	}
-	delay(100);
+	delay(100);//wait for Sensor to get ready
 }
 
 //disable [Sensor]
@@ -162,11 +162,11 @@ void disableallsensors()
 //read [Sensor]
 int16_t readsensor(int sensornr)
 {
-	int16_t range = 0;
+	int16_t range = 0;//initialise return value
 
 	if (sensornr >= 0 && sensornr <= 15)
 	{
-		switch (sensornr)
+		switch (sensornr)//Lookup Sensor to measure
 		{
 
 		case 0:range = ad0.readADC_SingleEnded(0);break;
@@ -200,33 +200,19 @@ int16_t readsensor(int sensornr)
 //read all Sensors in a row
 void readallsensors()
 {
-	ranges[0] = ad0.readADC_SingleEnded(0);
-	ranges[1] = ad0.readADC_SingleEnded(1);
-	ranges[2] = ad0.readADC_SingleEnded(2);
-	ranges[3] = ad0.readADC_SingleEnded(3);
-
-	ranges[4] = ad1.readADC_SingleEnded(0);
-	ranges[5] = ad1.readADC_SingleEnded(1);
-	ranges[6] = ad1.readADC_SingleEnded(2);
-	ranges[7] = ad1.readADC_SingleEnded(3);
-
-	ranges[8] = ad2.readADC_SingleEnded(0);
-	ranges[9] = ad2.readADC_SingleEnded(1);
-	ranges[10] = ad2.readADC_SingleEnded(2);
-	ranges[11] = ad2.readADC_SingleEnded(3);
-
-	ranges[12] = ad3.readADC_SingleEnded(0);
-	ranges[13] = ad3.readADC_SingleEnded(1);
-	ranges[14] = ad3.readADC_SingleEnded(2);
-	ranges[15] = ad3.readADC_SingleEnded(3);
+	for (int i = 0; i <= 15; i++)
+	{
+		readsensor(i);
+	}
 }
 
 //read all sensors 4 at a time
 void fastread()
 {
-	#ifdef serialDebug
+#ifdef serialDebug
 		Serial.println("fastread");
-	#endif // serialDebug
+#endif // serialDebug
+
 	for (int i = 0; i <= 3; i++)
 	{
 		//Start Reading Block i:
@@ -249,10 +235,11 @@ void sendsolution()
 #ifdef serialDebug
 	Serial.println("Solution:");
 #endif // serialDebug
+
 	for (int i = 0; i <= 15; i++)
 	{
-		Serial.write(lowByte(ranges[i]));
-		Serial.write(highByte(ranges[i]));
+		Serial.write(lowByte(ranges[i]));	//Send low 8-Bit of 16-Bit
+		Serial.write(highByte(ranges[i]));	//Send high 8-Bit of 16-Bit
 	}
 
 #ifdef serialDebug
@@ -268,7 +255,7 @@ void sendsolution()
 }
 
 
-//-------------------Loop--------------------
+//----------------------Loop-------------------------------
 
 void loop() 
 {
@@ -278,31 +265,33 @@ void loop()
 #endif // serialDebug
 
 #ifndef serialDebug_continuous
-	while (!Serial.available()) {} //waits for a Message from Node
-	mram = Serial.read(); //reads Message from Node
+	while (!Serial.available()) {}	//waits for a Message from Node
+	mram = Serial.read();			//reads Message from Node
 #endif //serialDebug_continuous
 
 #ifdef serialDebug
 	Serial.println("message received");
 #endif // serialDebug
-	
+
 	
 	if (mram == param::call)//call message received
 	{
 #ifdef serialDebug
 		Serial.println(String("..call message.."));
 #endif // serialDebug
+
 		fastread();
 	}
-//-----------------------------------------------------------------
+//---------------------------------------------------------
 	else if (mram == param::ask)//ask message recieved
 	{
 #ifdef serialDebug
 		Serial.println(String("..ask message.."));
 #endif // serialDebug
+
 		sendsolution();
 	}
-//----------------------------------------------------------------
+//---------------------------------------------------------
 	else if (mram == param::ident_ask)//ident_ask message recieved
 	{
 #ifdef serialDebug
@@ -315,20 +304,13 @@ void loop()
 		Serial.println(String(" "));
 #endif // serialDebug
 	}
-//----------------------------------------------------------------
+//---------------------------------------------------------
 	else//anny other message -> do nothing
 	{
 #ifdef serialDebug
 		Serial.println(String("!!unidentified message!!"));
 #endif // serialDebug
 	}
-
-
-
-
-
-	
-
 
 
 #ifdef serialDebug_continuous
